@@ -58,8 +58,11 @@ function DashboardLayout() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    // BrowserRouter must wrap AuthProvider (not the other way around): the
+    // AuthContext calls useNavigate() for client-side logout redirects, and
+    // that hook only works for components rendered *inside* a Router.
+    <BrowserRouter>
+      <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -84,8 +87,8 @@ function App() {
             </Route>
           </Route>
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

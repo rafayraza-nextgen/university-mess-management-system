@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 
 export const AuthContext = createContext(null);
@@ -77,6 +78,11 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Client-side navigation for logout/revocation redirects. Using the router
+  // (rather than window.location) keeps the SPA mounted: no hard reload, no
+  // full page fetch, and no dependence on the server resolving /login.
+  const navigate = useNavigate();
 
   // The auth user and the last known role/status, so background revalidation
   // does not need to re-subscribe every time the session object changes
@@ -193,7 +199,9 @@ export function AuthProvider({ children }) {
           lastKnownRef.current = { role: null, accountStatus: null };
           setSession(null);
           setUser(null);
-          window.location.replace("/login");
+          // Client-side redirect (same rationale as logout): a hard
+          // window.location call here would 404 on Vercel's static host.
+          navigate("/login");
         }
 
         return;
@@ -219,7 +227,7 @@ export function AuthProvider({ children }) {
     } catch (refreshError) {
       console.warn("Profile refresh failed.", refreshError);
     }
-  }, []);
+  }, [navigate]);
 
   // Background revalidation, so a role or status change made elsewhere reaches
   // an already-open tab without a reload.
@@ -339,8 +347,11 @@ export function AuthProvider({ children }) {
 
     setSession(null);
     setUser(null);
-    window.location.replace("/login");
-  }, []);
+    // Client-side redirect. window.location.replace("/login") used to live
+    // here, which forced a hard server request; on Vercel that returned a 404
+    // because /login is not a real file. navigate() routes within the SPA.
+    navigate("/login");
+  }, [navigate]);
 
   const value = useMemo(
     () => ({
